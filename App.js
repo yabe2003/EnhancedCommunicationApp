@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, Button, Animated, Alert } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Animated, Alert, Dimensions } from 'react-native';
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
+import { LinearGradient } from 'expo-linear-gradient';
+
+const { width, height } = Dimensions.get('window');
 
 export default function App() {
   const [recording, setRecording] = useState(null);
@@ -42,89 +45,66 @@ export default function App() {
 
   const loadRecordings = async () => {
     const recordingsDir = `${FileSystem.documentDirectory}recordings/`;
-    console.log(`Attempting to access recordings directory at: ${recordingsDir}`);
     try {
       const dirInfo = await FileSystem.getInfoAsync(recordingsDir);
-      console.log('Directory info:', dirInfo);
       if (!dirInfo.exists) {
-        console.log('Recordings directory does not exist. Creating...');
         await FileSystem.makeDirectoryAsync(recordingsDir, { intermediates: true });
-        console.log('Recordings directory created successfully.');
         setRecordings([]);
         setRecordingCount(0);
       } else {
-        console.log('Recordings directory exists. Reading files...');
         const files = await FileSystem.readDirectoryAsync(recordingsDir);
-        console.log('Files found:', files);
         setRecordings(files);
         setRecordingCount(files.length);
       }
     } catch (error) {
-      console.error('Error loading recordings:', error);
       Alert.alert('Error', 'An unexpected error occurred while loading recordings.');
     }
   };
 
   const startRecording = async () => {
     try {
-      // Request permissions to access the microphone
-      console.log('Requesting microphone permissions...');
       const permission = await Audio.requestPermissionsAsync();
       if (permission.status !== 'granted') {
         Alert.alert('Permission Required', 'Permission to access microphone is required!');
         return;
       }
 
-      // Prepare audio settings
-      console.log('Setting audio mode...');
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
       });
 
-      // Create a new recording instance
-      console.log('Initializing recording...');
       const newRecording = new Audio.Recording();
       await newRecording.prepareToRecordAsync(Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY);
       await newRecording.startAsync();
-      console.log('Recording started.');
 
       setRecording(newRecording);
       setIsRecording(true);
     } catch (err) {
-      console.error('Failed to start recording:', err);
       Alert.alert('Error', 'Failed to start recording. Please try again.');
     }
   };
 
   const stopRecording = async () => {
     try {
-      console.log('Stopping recording...');
       setIsRecording(false);
       await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
-      console.log(`Recording stopped. URI: ${uri}`);
 
-      // Determine the new recording number
       const newCount = recordingCount + 1;
       const fileName = `${newCount}.mp3`;
       const recordingsDir = `${FileSystem.documentDirectory}recordings/`;
       const newPath = recordingsDir + fileName;
-      console.log(`Moving recording to: ${newPath}`);
 
-      // Move the file to the recordings directory with the new name
       await FileSystem.moveAsync({
         from: uri,
         to: newPath,
       });
-      console.log(`Recording saved as ${fileName}`);
 
-      // Update state
       setRecordings([...recordings, fileName]);
       setRecordingCount(newCount);
       setRecording(null);
     } catch (error) {
-      console.error('Failed to stop recording:', error);
       Alert.alert('Error', 'Failed to stop recording. Please try again.');
     }
   };
@@ -140,24 +120,28 @@ export default function App() {
   const clearRecordings = async () => {
     try {
       const recordingsDir = `${FileSystem.documentDirectory}recordings/`;
-      console.log(`Clearing all recordings in: ${recordingsDir}`);
-      // Delete all files in the recordings directory
       for (const recording of recordings) {
-        console.log(`Deleting: ${recording}`);
         await FileSystem.deleteAsync(`${recordingsDir}${recording}`, { idempotent: true });
       }
       setRecordings([]);
       setRecordingCount(0);
-      console.log('All recordings cleared.');
       Alert.alert('Success', 'All recordings have been cleared.');
     } catch (error) {
-      console.error('Failed to clear recordings:', error);
       Alert.alert('Error', 'Failed to clear recordings. Please try again.');
     }
   };
 
   return (
-    <View style={styles.container}>
+    <LinearGradient
+      colors={['#3f5e7c', '#574c75', '#324168']}
+      style={styles.container}
+    >
+      {/* Placeholder Text Box for Transcription */}
+      <View style={styles.placeholderBox}>
+        <Text style={styles.placeholderText}></Text>
+      </View>
+
+      {/* Recording Indicator */}
       {isRecording && (
         <Animated.View
           style={[
@@ -172,25 +156,35 @@ export default function App() {
           ]}
         />
       )}
-      <Button
-        title={recording ? 'Stop Recording' : 'Start Recording'}
+
+      {/* Start/Stop Recording Button */}
+      <TouchableOpacity
+        style={styles.recordButton}
         onPress={recording ? stopRecording : startRecording}
-      />
-      {getRecordingLines()}
+      >
+        <Text style={styles.buttonText}>{recording ? 'Stop Recording' : 'Start Recording'}</Text>
+      </TouchableOpacity>
+
+      {/* List of Recordings */}
+      <View style={styles.recordingsContainer}>
+        {getRecordingLines()}
+      </View>
+
+      {/* Clear Recordings Button */}
       {recordings.length > 0 && (
-        <View style={{ marginTop: 20 }}>
-          <Button title="Clear Recordings" onPress={clearRecordings} color="red" />
-        </View>
+        <TouchableOpacity style={styles.clearButton} onPress={clearRecordings}>
+          <Text style={styles.buttonText}>Clear Recordings</Text>
+        </TouchableOpacity>
       )}
+
       <StatusBar style="auto" />
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
@@ -202,10 +196,55 @@ const styles = StyleSheet.create({
     backgroundColor: 'red',
     marginBottom: 20,
   },
+  recordingsContainer: {
+    width: '100%',
+    marginTop: 20,
+    alignItems: 'center',
+  },
   recordingRow: {
     marginTop: 10,
   },
   recordingText: {
+    fontSize: 16,
+    color: '#fff', // White text for recordings
+  },
+  recordButton: {
+    backgroundColor: '#3f5e7c', // Matching one of the gradient colors
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 50, // Positioning the button lower
+    width: '80%',
+  },
+  clearButton: {
+    backgroundColor: '#574c75', // Matching one of the gradient colors
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    borderRadius: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 30,
+    width: '60%',
+  },
+  buttonText: {
+    color: '#fff', // White text for buttons
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  placeholderBox: {
+    width: '80%',
+    height: 100,
+    borderWidth: 2,
+    borderColor: '#fff', // White borders
+    borderRadius: 10,
+    marginBottom: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  placeholderText: {
+    color: '#fff',
     fontSize: 16,
   },
 });
