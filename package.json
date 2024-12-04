@@ -9,16 +9,27 @@
     "web": "expo start --web"
   },
   "dependencies": {
+<<<<<<< Updated upstream
     "expo": "^52.0.14",
     "expo-av": "~15.0.1",
     "expo-blur": "~14.0.1",
     "expo-linear-gradient": "~14.0.1",
+=======
+    "assemblyai": "^4.8.0",
+    "elevenlabs": "^0.18.1",
+    "expo": "~52.0.11",
+    "expo-av": "~15.0.1",
+>>>>>>> Stashed changes
     "expo-status-bar": "~2.0.0",
+    "install": "^0.13.0",
+    "npm": "^10.9.1",
     "react": "18.3.1",
     "react-native": "0.76.3"
   },
   "devDependencies": {
-    "@babel/core": "^7.20.0"
+    "@babel/core": "^7.20.0",
+    "typescript": "^5.3.3",
+    "@types/react": "~18.3.12"
   },
   "private": true
 }

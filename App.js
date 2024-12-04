@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
+<<<<<<< Updated upstream
 import { StyleSheet, Text, View, TouchableOpacity, Animated, Alert, Dimensions } from 'react-native';
+=======
+import { StyleSheet, Text, View, Button, Animated, Alert } from 'react-native';
+import { processRecording } from './AssemAIBatchTranscriber';
+>>>>>>> Stashed changes
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -85,9 +90,14 @@ export default function App() {
     }
   };
 
+
+
+
   const stopRecording = async () => {
     try {
       setIsRecording(false);
+
+      //Stop recording 
       await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
 
@@ -96,11 +106,44 @@ export default function App() {
       const recordingsDir = `${FileSystem.documentDirectory}recordings/`;
       const newPath = recordingsDir + fileName;
 
+<<<<<<< Updated upstream
+=======
+      // Ensure recordings directory exists
+      await FileSystem.makeDirectoryAsync(recordingsDir, { intermediates: true });
+
+      // Move the file to the recordings directory with the new name
+>>>>>>> Stashed changes
       await FileSystem.moveAsync({
         from: uri,
         to: newPath,
       });
 
+<<<<<<< Updated upstream
+=======
+      // Step 1: Send the MP3 file to AssemblyAI for transcription
+      console.log('Sending recording to AssemblyAI...');
+      
+      const transcription = await processRecording(newPath);
+
+      //See if transcript is there
+      console.log('Transcription content:', transcription);
+
+
+      // Save the transcription to a file
+      const transcriptionDir = `${FileSystem.documentDirectory}transcriptions/`;
+      const transcriptionPath = `${transcriptionDir}${newCount}.txt`;
+      await FileSystem.makeDirectoryAsync(transcriptionDir, { intermediates: true });
+      await FileSystem.writeAsStringAsync(transcriptionPath, transcription);
+      console.log('Transcription saved:', transcriptionPath);
+
+      // Step 2: Send the transcription to ElevenLabs to generate an audio file
+      /*
+      console.log('Sending transcription to ElevenLabs...');
+      const generatedAudioPath = await ElevenlabsAudioGen.generateAudio(transcriptionPath);
+      */
+
+      // Step 3: Update the state with new recordings and their associated audio
+>>>>>>> Stashed changes
       setRecordings([...recordings, fileName]);
       setRecordingCount(newCount);
       setRecording(null);
@@ -108,6 +151,11 @@ export default function App() {
       Alert.alert('Error', 'Failed to stop recording. Please try again.');
     }
   };
+
+
+
+
+
 
   const getRecordingLines = () => {
     return recordings.map((recording, index) => (
