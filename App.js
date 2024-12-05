@@ -109,12 +109,35 @@ export default function App() {
     }
   };
 
+  // Added function to play recordings
+  const playRecording = async (uri) => {
+    try {
+      const { sound } = await Audio.Sound.createAsync({ uri });
+      await sound.playAsync();
+      // Unload the sound when playback is complete
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.didJustFinish) {
+          sound.unloadAsync();
+        }
+      });
+    } catch (error) {
+      Alert.alert('Error', 'Failed to play recording. Please try again.');
+    }
+  };
+
+  // Modified function to include play button
   const getRecordingLines = () => {
-    return recordings.map((recording, index) => (
-      <View key={index} style={styles.recordingRow}>
-        <Text style={styles.recordingText}>{recording}</Text>
-      </View>
-    ));
+    return recordings.map((recording, index) => {
+      const recordingUri = `${FileSystem.documentDirectory}recordings/${recording}`;
+      return (
+        <View key={index} style={styles.recordingRow}>
+          <Text style={styles.recordingText}>{recording}</Text>
+          <TouchableOpacity style={styles.playButton} onPress={() => playRecording(recordingUri)}>
+            <Text style={styles.playButtonText}>Play</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    });
   };
 
   const clearRecordings = async () => {
@@ -202,6 +225,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   recordingRow: {
+    flexDirection: 'row', // Added to align text and button horizontally
+    alignItems: 'center',
     marginTop: 10,
   },
   recordingText: {
@@ -246,5 +271,17 @@ const styles = StyleSheet.create({
   placeholderText: {
     color: '#fff',
     fontSize: 16,
+  },
+  // Added styles for the play button
+  playButton: {
+    backgroundColor: '#3f5e7c', // Matching the record button color
+    paddingVertical: 5,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+    marginLeft: 10,
+  },
+  playButtonText: {
+    color: '#fff',
+    fontSize: 14,
   },
 });
